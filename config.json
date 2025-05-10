@@ -1,0 +1,10 @@
+{
+  "player_colors": [
+    "CYAN", "MAGENTA", "YELLOW",
+    "GREEN", "BLUE", "LIGHTRED_EX",
+    "LIGHTCYAN_EX", "LIGHTMAGENTA_EX"
+  ],
+  "API_KEY": "",
+  "USERNAMES": [],
+  "POLL_INTERVAL": 1
+}
