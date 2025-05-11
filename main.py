@@ -10,6 +10,7 @@ import pytesseract
 from PIL import Image
 import pyautogui
 from packaging import version
+import base64
 
 init(autoreset=True)
 
@@ -56,33 +57,64 @@ session.headers.update(HEADERS)
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-import os
-import requests
-import base64
+def _make_github_request(api_url: str, token: str = None):
+    headers = {}
+    if token:
+        headers["Authorization"] = f"token {token}"
+    return requests.get(api_url, headers=headers)
 
 def view(file_path: str, repo: str = "Eletroman179/donutsmp_tracker", branch: str = "main"):
+    token = config.get("GITHUB_TOKEN")
     api_url = f"https://api.github.com/repos/{repo}/contents/{file_path}?ref={branch}"
-    response = requests.get(api_url)
+
+    headers = {"Authorization": f"token {token}"} if token else {}
+    response = requests.get(api_url, headers=headers)
+
     if response.status_code == 200:
-        content = response.json()["content"]
-        return base64.b64decode(content).decode()
+        try:
+            content = base64.b64decode(response.json()["content"])
+            return content.decode()
+        except Exception as e:
+            print(f"Error decoding content: {e}")
+            return None
     else:
-        print(f"Failed to fetch file: {response.status_code}")
-        return None
+        print(f"[GitHub API failed: {response.status_code}] Trying raw.githubusercontent fallback...")
+        raw_url = f"https://raw.githubusercontent.com/{repo}/{branch}/{file_path}"
+        fallback = requests.get(raw_url, headers={"Cache-Control": "no-cache"})
+        if fallback.status_code == 200:
+            return fallback.text
+        else:
+            print(f"Fallback also failed: {fallback.status_code}")
+            return None
 
 def download(file_path: str, filename: str = None, repo: str = "Eletroman179/donutsmp_tracker", branch: str = "main"):
+    token = config.get("GITHUB_TOKEN")
     if filename is None:
         filename = os.path.basename(file_path)
 
     api_url = f"https://api.github.com/repos/{repo}/contents/{file_path}?ref={branch}"
-    response = requests.get(api_url)
+    headers = {"Authorization": f"token {token}"} if token else {}
+    response = requests.get(api_url, headers=headers)
+
     if response.status_code == 200:
-        content = base64.b64decode(response.json()["content"])
+        try:
+            content = base64.b64decode(response.json()["content"])
+            with open(filename, 'wb') as f:
+                f.write(content)
+            print(f"Downloaded '{filename}' from GitHub API")
+            return
+        except Exception as e:
+            print(f"Error decoding or saving: {e}")
+
+    print(f"[GitHub API failed: {response.status_code}] Trying raw.githubusercontent fallback...")
+    raw_url = f"https://raw.githubusercontent.com/{repo}/{branch}/{file_path}"
+    fallback = requests.get(raw_url, headers={"Cache-Control": "no-cache"})
+    if fallback.status_code == 200:
         with open(filename, 'wb') as f:
-            f.write(content)
-        print(f"Downloaded '{filename}' from '{repo}'")
+            f.write(fallback.content)
+        print(f"Downloaded '{filename}' from fallback URL")
     else:
-        print(f"Failed to download '{file_path}' from '{repo}': {response.status_code}")
+        print(f"Failed to download '{file_path}' via fallback: {fallback.status_code}")
 
 # Function to capture the screen at a specified region
 def capture_screenshot(region=(0, 0, 1920, 50)):  # Example region, adjust as needed
