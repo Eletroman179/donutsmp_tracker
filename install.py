@@ -1,5 +1,6 @@
 import requests
 import json
+import time
 
 def download(file_path: str, filename: str = None, repo: str = "Eletroman179/donutsmp_tracker", branch: str = "main"):
     timestamp = int(time.time())  # Cache-busting timestamp
@@ -22,6 +23,7 @@ download("main.py")
 
 # Prompt for API key and update config
 api_key = input("Enter API key (use /api in-game): ")
+github_token = input("Enter github token if none leave empty: ")
 print("Now edit the usernames in the 'config.json' file.")
 
 # Load and update config
@@ -29,6 +31,7 @@ with open("config.json", "r") as file:
     config = json.load(file)  # FIXED: used json.load, not json.loads
 
 config["API_KEY"] = api_key
+config["GITHUB_TOKEN"] = github_token
 
 with open("config.json", "w") as file:
     json.dump(config, file, indent=4)
