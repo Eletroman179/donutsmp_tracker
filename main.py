@@ -56,28 +56,31 @@ session.headers.update(HEADERS)
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
+import os
+import requests
+import base64
+
 def view(file_path: str, repo: str = "Eletroman179/donutsmp_tracker", branch: str = "main"):
-    timestamp = int(time.time())  # Cache-busting timestamp
-    url = f"https://raw.githubusercontent.com/{repo}/{branch}/{file_path}?{timestamp}"
-    response = requests.get(url, headers={"Cache-Control": "no-cache"})
+    api_url = f"https://api.github.com/repos/{repo}/contents/{file_path}?ref={branch}"
+    response = requests.get(api_url)
     if response.status_code == 200:
-        return response.text
+        content = response.json()["content"]
+        return base64.b64decode(content).decode()
     else:
         print(f"Failed to fetch file: {response.status_code}")
         return None
 
 def download(file_path: str, filename: str = None, repo: str = "Eletroman179/donutsmp_tracker", branch: str = "main"):
-    timestamp = int(time.time())  # Cache-busting timestamp
-    raw_url = f"https://raw.githubusercontent.com/{repo}/{branch}/{file_path}?{timestamp}"
-    
     if filename is None:
         filename = os.path.basename(file_path)
 
-    response = requests.get(raw_url, headers={"Cache-Control": "no-cache"})
+    api_url = f"https://api.github.com/repos/{repo}/contents/{file_path}?ref={branch}"
+    response = requests.get(api_url)
     if response.status_code == 200:
+        content = base64.b64decode(response.json()["content"])
         with open(filename, 'wb') as f:
-            f.write(response.content)
-        print(f"Downloaded '{filename}' from '{repo}' at {time.ctime(timestamp)}")
+            f.write(content)
+        print(f"Downloaded '{filename}' from '{repo}'")
     else:
         print(f"Failed to download '{file_path}' from '{repo}': {response.status_code}")
 
