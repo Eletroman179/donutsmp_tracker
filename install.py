@@ -1,29 +1,18 @@
 import requests
 import json
 
-def download(
-    file_path: str,
-    filename: str = None,
-    repo: str = "Eletroman179/donutsmp_tracker",
-    branch: str = "main"
-):
-    """
-    Downloads a file from a GitHub repository's raw URL.
-
-    :param file_path: Path to the file inside the repo (e.g., 'config/config.json')
-    :param filename: Local filename to save as (defaults to the same as in file_path)
-    :param repo: GitHub repo in 'username/repo' format
-    :param branch: Branch name (default: 'main')
-    """
-    raw_url = f"https://raw.githubusercontent.com/{repo}/{branch}/{file_path}"
+def download(file_path: str, filename: str = None, repo: str = "Eletroman179/donutsmp_tracker", branch: str = "main"):
+    timestamp = int(time.time())  # Cache-busting timestamp
+    raw_url = f"https://raw.githubusercontent.com/{repo}/{branch}/{file_path}?{timestamp}"
+    
     if filename is None:
-        filename = file_path.split("/")[-1]
+        filename = os.path.basename(file_path)
 
-    response = requests.get(raw_url)
+    response = requests.get(raw_url, headers={"Cache-Control": "no-cache"})
     if response.status_code == 200:
         with open(filename, 'wb') as f:
             f.write(response.content)
-        print(f"Downloaded '{filename}' from '{repo}'")
+        print(f"Downloaded '{filename}' from '{repo}' at {time.ctime(timestamp)}")
     else:
         print(f"Failed to download '{file_path}' from '{repo}': {response.status_code}")
 
