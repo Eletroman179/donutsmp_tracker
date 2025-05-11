@@ -57,7 +57,8 @@ session.headers.update(HEADERS)
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 def view(file_path: str, repo: str = "Eletroman179/donutsmp_tracker", branch: str = "main"):
-    url = f"https://raw.githubusercontent.com/{repo}/{branch}/{file_path}"
+    timestamp = int(time.time())  # Cache-busting timestamp
+    url = f"https://raw.githubusercontent.com/{repo}/{branch}/{file_path}?{timestamp}"
     response = requests.get(url, headers={"Cache-Control": "no-cache"})
     if response.status_code == 200:
         return response.text
