@@ -168,7 +168,11 @@ def update():
             if version.parse(remote_data["ver"]) > version.parse(local_data["ver"]):
                 print(f"Updating script from version {local_data['ver']} to {remote_data['ver']}")
                 download("main.py")
-                download("config.json")
+                local_data["ver"] = remote_data["ver"]
+                
+                with open("config.json", "w") as file:
+                    json.dump(local_data, file, indent=4)
+                
         except json.JSONDecodeError:
             print("Remote config.json is not a valid JSON.")
     else:
