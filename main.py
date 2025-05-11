@@ -9,6 +9,7 @@ from colorama import Fore, Style, init
 import pytesseract
 from PIL import Image
 import pyautogui
+from packaging import version
 
 init(autoreset=True)
 
@@ -156,13 +157,15 @@ def update():
 
     # Step 2: Load remote config
     remote_json_text = view("config.json")
+    print("Remote config contents:", remote_json_text)
+
 
     # Step 3: update the script
     if remote_json_text:
         try:
             remote_data = json.loads(remote_json_text)
 
-            if remote_data["ver"] != local_data["ver"]:
+            if version.parse(remote_data["ver"]) > version.parse(local_data["ver"]):
                 print(f"Updating script from version {local_data['ver']} to {remote_data['ver']}")
                 download("main.py")
                 download("config.json")
@@ -170,6 +173,8 @@ def update():
             print("Remote config.json is not a valid JSON.")
     else:
         print("Could not retrieve remote config.")
+        
+    time.sleep(3)
 
 def main_loop():
     first_pass = True
