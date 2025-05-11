@@ -57,8 +57,7 @@ session.headers.update(HEADERS)
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 def view(file_path: str, repo: str = "Eletroman179/donutsmp_tracker", branch: str = "main"):
-    timestamp = int(time.time())  # Cache-busting
-    url = f"https://raw.githubusercontent.com/{repo}/{branch}/{file_path}?{timestamp}"
+    url = f"https://raw.githubusercontent.com/{repo}/{branch}/{file_path}"
     response = requests.get(url, headers={"Cache-Control": "no-cache"})
     if response.status_code == 200:
         return response.text
@@ -67,15 +66,17 @@ def view(file_path: str, repo: str = "Eletroman179/donutsmp_tracker", branch: st
         return None
 
 def download(file_path: str, filename: str = None, repo: str = "Eletroman179/donutsmp_tracker", branch: str = "main"):
-    raw_url = f"https://raw.githubusercontent.com/{repo}/{branch}/{file_path}"
+    timestamp = int(time.time())  # Cache-busting timestamp
+    raw_url = f"https://raw.githubusercontent.com/{repo}/{branch}/{file_path}?{timestamp}"
+    
     if filename is None:
         filename = os.path.basename(file_path)
 
-    response = requests.get(raw_url)
+    response = requests.get(raw_url, headers={"Cache-Control": "no-cache"})
     if response.status_code == 200:
         with open(filename, 'wb') as f:
             f.write(response.content)
-        print(f"Downloaded '{filename}' from '{repo}'")
+        print(f"Downloaded '{filename}' from '{repo}' at {time.ctime(timestamp)}")
     else:
         print(f"Failed to download '{file_path}' from '{repo}': {response.status_code}")
 
