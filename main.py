@@ -292,7 +292,7 @@ def main_loop():
         except KeyboardInterrupt:
             # Prompt the user to add a new username
             print("Do you want to do")
-            do = input("[E]xit [A]dd username [P]ing \n").strip()
+            do = input("[E]xit [A]dd username [P]ing [U]pdate \n").strip()
 
             if do.lower() == "e":
                 print(f"\n{Fore.RED}[Exiting by user]{Style.RESET_ALL}")
@@ -316,6 +316,9 @@ def main_loop():
             elif do.lower() == "p":
                 first_pass = True
                 continue
+            elif do.lower() == "u":
+                update()
+                first_pass = True
 
 if __name__ == "__main__":
     clear_screen()
