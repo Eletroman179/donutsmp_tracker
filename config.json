@@ -1,10 +1,16 @@
 {
     "player_colors": [
-        "CYAN", "MAGENTA", "YELLOW",
-        "GREEN", "BLUE", "LIGHTRED_EX",
-        "LIGHTCYAN_EX", "LIGHTMAGENTA_EX"
+        "CYAN",
+        "MAGENTA",
+        "YELLOW",
+        "GREEN",
+        "BLUE",
+        "LIGHTRED_EX",
+        "LIGHTCYAN_EX",
+        "LIGHTMAGENTA_EX"
     ],
     "API_KEY": "",
+    "GITHUB_TOKEN": "",
     "USERNAMES": [],
     "POLL_INTERVAL": 1,
     "ver": "1.4.0"
