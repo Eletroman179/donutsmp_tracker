@@ -172,13 +172,14 @@ def update():
                 
                 with open("config.json", "w") as file:
                     json.dump(local_data, file, indent=4)
-                
+            else:
+                print("Script is up to date.")
         except json.JSONDecodeError:
             print("Remote config.json is not a valid JSON.")
     else:
         print("Could not retrieve remote config.")
         
-    time.sleep(3)
+    time.sleep(2)
 
 def main_loop():
     first_pass = True
