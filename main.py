@@ -17,7 +17,6 @@ init(autoreset=True)
 with open("config.json") as file:
     config = json.load(file)
 
-# Map strings to actual Fore color attributes
 player_colors = [getattr(Fore, color_name) for color_name in config["player_colors"]]
 
 join_color = Fore.GREEN + Style.BRIGHT
@@ -40,7 +39,6 @@ BASE_URL_LOOKUP = "https://api.donutsmp.net/v1/lookup/{}"
 
 pinging = False
 
-# Initialize old_stats with placeholders and diff fields
 old_stats = {
     user: {
         "money": None,
@@ -57,7 +55,7 @@ session.headers.update(HEADERS)
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-def _make_github_request(api_url: str, token: str = None):
+def _make_github_request(api_url: str, token: str = ""):
     headers = {}
     if token:
         headers["Authorization"] = f"token {token}"
@@ -87,7 +85,7 @@ def view(file_path: str, repo: str = "Eletroman179/donutsmp_tracker", branch: st
             print(f"Fallback also failed: {fallback.status_code}")
             return None
 
-def download(file_path: str, filename: str = None, repo: str = "Eletroman179/donutsmp_tracker", branch: str = "main"):
+def download(file_path: str, filename: str = "", repo: str = "Eletroman179/donutsmp_tracker", branch: str = "main"):
     token = config.get("GITHUB_TOKEN")
     if filename is None:
         filename = os.path.basename(file_path)
@@ -116,28 +114,14 @@ def download(file_path: str, filename: str = None, repo: str = "Eletroman179/don
     else:
         print(f"Failed to download '{file_path}' via fallback: {fallback.status_code}")
 
-# Function to capture the screen at a specified region
-def capture_screenshot(region=(0, 0, 1920, 50)):  # Example region, adjust as needed
-    # Capture the region where the username is displayed (near the top of the screen)
-    screenshot = pyautogui.screenshot(region=region)
-    return screenshot
+def capture_screenshot(region=(0, 0, 1920, 50)):
+    return pyautogui.screenshot(region=region)
 
-# Function to extract text (the player's username) from the screenshot
 def extract_username_from_screenshot(image):
-    # Use pytesseract to extract text
-    text = pytesseract.image_to_string(image)
-    return text.strip()
+    return pytesseract.image_to_string(image).strip()
 
-# Function to get the player's username based on the on-screen display
 def get_player_username(region=(0, 0, 1920, 50)):
-    # Capture a screenshot of the top part of the screen (where the Jade mod shows the name)
-    screenshot = capture_screenshot(region)
-    
-    # Extract the username from the screenshot
-    username = extract_username_from_screenshot(screenshot)
-    
-    # Return the username if it's detected
-    return username
+    return extract_username_from_screenshot(capture_screenshot(region))
 
 def clear_screen():
     os.system("cls" if os.name == "nt" else "clear")
@@ -185,7 +169,6 @@ def play_notification():
     winsound.PlaySound("SystemExit", winsound.SND_ALIAS)
 
 def update():
-    # Step 1: Load local config
     try:
         with open("config.json", "r") as file:
             local_data = json.load(file)
@@ -193,12 +176,9 @@ def update():
         print("Local config.json not found")
         exit(1)
 
-    # Step 2: Load remote config
     remote_json_text = view("config.json")
     print("Remote config contents:", remote_json_text)
 
-
-    # Step 3: update the script
     if remote_json_text:
         try:
             remote_data = json.loads(remote_json_text)
@@ -220,6 +200,7 @@ def update():
     time.sleep(2)
 
 def main_loop():
+    global pinging
     first_pass = True
 
     while True:
@@ -231,11 +212,9 @@ def main_loop():
                 print(f"{Fore.CYAN}Fetching player data...{Style.RESET_ALL}")
                 bar = progressbar.ProgressBar(max_value=len(USERNAMES), widgets=widgets)
 
-            # 1) Fetch & compute diffs
             pinging = True
             for idx, user in enumerate(USERNAMES):
                 try:
-                    # Ensure the user exists in old_stats
                     if user not in old_stats:
                         old_stats[user] = {
                             "money": 0,
@@ -251,21 +230,17 @@ def main_loop():
                     stats = fetch_stats(user)
                     online = is_online(user)
 
-                    # compute diffs
                     money_diff  = 0 if prev_money is None else stats["money"] - prev_money
                     shards_diff = 0 if prev_shards is None else stats["shards"] - prev_shards
 
-                    # store last diffs
                     old_stats[user]["last_money_diff"]  = money_diff
                     old_stats[user]["last_shards_diff"] = shards_diff
 
-                    # detect change for notification
                     if (money_diff != 0 or shards_diff != 0
                         or (old_stats[user]["online"] is True and not online)
                         or (old_stats[user]["online"] is False and online)):
                         changed = True
 
-                    # update stats
                     old_stats[user].update({
                         "money":  stats["money"],
                         "shards": stats["shards"],
@@ -273,21 +248,20 @@ def main_loop():
                     })
 
                 except Exception as e:
-                    # on error, zero them out
                     old_stats[user].update({"money":0, "shards":0, "online":False})
                     display.append(f"{Fore.RED}{user:<20}: Error fetching data [deleting]{Style.RESET_ALL}")
                     USERNAMES.remove(user)
 
                 if first_pass:
                     clr = player_colors[idx % len(player_colors)]
-                    bar.update(idx+1, username=f"{clr}|{user:^15}|{Style.RESET_ALL}")
+                    bar.update(idx+1, username=f"{clr}|{user:^15}|{Style.RESET_ALL}") # type: ignore
             pinging = False
-            # 2) Build display rows, sorting online first then by money
+
             for user in sorted(
                 USERNAMES,
                 key=lambda u: (
-                    not old_stats[u]["online"],
-                    -old_stats[u]["money"]
+                    not old_stats[u].get("online", False),
+                    -old_stats[u].get("money") if old_stats[u].get("money") is not None else 0 # type: ignore
                 )
             ):
                 st  = old_stats[user]
@@ -300,11 +274,14 @@ def main_loop():
                 online_str = "yes" if st["online"] else "no"
                 clr = player_colors[USERNAMES.index(user) % len(player_colors)]
 
-                uname_cell = f"{user:^20}"
-                money_cell = f"{st['money']:>13,} {md_s:^14}"
-                shards_cell= f"{st['shards']:>7,} {sd_s:^15}"
-                online_cell= f"{online_str:^11}"
-                loc_cell   = f"{loc:^22}"
+                money_val  = st["money"] if st["money"] is not None else 0
+                shards_val = st["shards"] if st["shards"] is not None else 0
+
+                uname_cell  = f"{user:^20}"
+                money_cell  = f"{money_val:>13,} {md_s:^14}"
+                shards_cell = f"{shards_val:>7,} {sd_s:^15}"
+                online_cell = f"{online_str:^11}"
+                loc_cell    = f"{loc:^22}"
 
                 line = (
                     f"║{clr}{uname_cell}{Style.RESET_ALL}║"
@@ -315,17 +292,15 @@ def main_loop():
                 )
                 display.append(line)
 
-            # 3) Print & notify
             if changed or first_pass:
                 print_table(display)
                 if not first_pass:
                     play_notification()
 
             first_pass = False
-            time.sleep(POLL_INTERVAL)  # wait for the next polling cycle
+            time.sleep(POLL_INTERVAL)
 
         except KeyboardInterrupt:
-            # Prompt the user to add a new username
             print("Do you want to do")
             do = input("[E]xit [A]dd username [P]ing [U]pdate \n").strip()
 
